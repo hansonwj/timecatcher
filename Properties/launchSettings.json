@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "timecatcher (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "timecatcher (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
