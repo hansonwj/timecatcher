@@ -206,7 +206,7 @@ namespace timecatcher
             await notificationManager.RemoveAllAsync();
 
             // Create new notification
-            CreateTimeEntryNotification();
+            CreateTimeEntryNotification(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
         }
 
         private void  NotificationManager_NotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
@@ -217,7 +217,7 @@ namespace timecatcher
         public class ConfigData
         {
             public List<ClientConfig> clients { get; set; }
-            public int schedule { get; set; }
+            public float schedule { get; set; }
             public bool timerEnabled { get; set; }
         }
 
@@ -232,7 +232,7 @@ namespace timecatcher
             public string name { get; set; }
         }
 
-        private static void CreateTimeEntryNotification()
+        private static void CreateTimeEntryNotification(string triggeredTime)
         {
             string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string _configJson = File.ReadAllText(System.IO.Path.Combine(docPath, "timecatcher", "config.json"));
@@ -243,6 +243,8 @@ namespace timecatcher
 
             //.AddArgument("action", "ToastClick") // Disabled action on popup click
             appNotificationBuilder.AddText("What have you been working on?");
+            appNotificationBuilder.AddText("15 mins prior to "+triggeredTime);
+            
             var clientcombo = new AppNotificationComboBox("Client");
             // Read in 
             foreach (ClientConfig client in _config.clients)
@@ -255,11 +257,11 @@ namespace timecatcher
 
             appNotificationBuilder.AddTextBox("Notes", "Notes", "");
             appNotificationBuilder.AddButton(new AppNotificationButton("Submit")
-                .AddArgument("action", "submit"));
+                .AddArgument("action", triggeredTime));
             appNotificationBuilder.AddButton(new AppNotificationButton("Manager")
                 .AddArgument("action", "manager"));
             appNotificationBuilder.SetDuration(AppNotificationDuration.Long);
-
+            
 
             var appNotification = appNotificationBuilder.BuildNotification();
 
@@ -291,13 +293,13 @@ namespace timecatcher
             var dispatcherQueue = m_window?.DispatcherQueue ?? DispatcherQueue.GetForCurrentThread();
             dispatcherQueue.TryEnqueue(() =>
             {
-                if (args.Arguments["action"] == "submit") {
+                if (args.Arguments["action"] != "manager") {
                     Debug.WriteLine("Handling Time Entry");
                     var entry = new TimeEntry();
                     entry.Client = args.UserInput["Client"];
                     entry.Project = "";
                     entry.Notes = args.UserInput["Notes"];
-                    entry.Datetime = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                    entry.Datetime = args.Arguments["action"];
                     entry.Manual = "True";
                     ProcessNewTimeEntry(entry);
                     Globals.CurrentClient = args.UserInput["Client"];
