@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using Windows.Devices.Bluetooth.Advertisement;
 using Microsoft.Win32;
 using Windows.UI.Notifications.Management;
+using System.Timers;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -58,7 +59,7 @@ namespace timecatcher
             public uint dwTime;
         }
 
-        private static bool IsInactive()
+        private static bool UserIsInactive()
         {
             // Get the last input information
             LASTINPUTINFO lastInputInfo = new LASTINPUTINFO();
@@ -103,7 +104,10 @@ namespace timecatcher
         public static class Globals
         {
             public static String CurrentClient = ""; // Modifiable
+            
         }
+
+        public static Timer timer;
 
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
@@ -159,7 +163,7 @@ namespace timecatcher
             var _schedule = JsonConvert.DeserializeObject<ConfigData>(_configJson).schedule;
             var _timerEnabled = JsonConvert.DeserializeObject<ConfigData>(_configJson).timerEnabled;
 
-            var timer = new System.Timers.Timer(_schedule*1000*60);
+            timer = new System.Timers.Timer(_schedule*1000*60);
 
             // Hook up the Elapsed event for the timer.
             timer.Elapsed += (sender, e) => OnTimedEvent(sender, e, notificationManager);
@@ -190,7 +194,7 @@ namespace timecatcher
             {
                 var entry = new TimeEntry();
 
-                if (IsInactive())
+                if (UserIsInactive())
                 {
                     entry.Client = "Inactive";
                 }
