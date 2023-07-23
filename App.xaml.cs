@@ -79,6 +79,16 @@ namespace timecatcher
             return false;
         }
 
+        static DateTime GetLastMonday(DateTime currentDate)
+        {
+            int daysUntilMonday = (int)currentDate.DayOfWeek - (int)DayOfWeek.Monday;
+
+            if (daysUntilMonday <= 0)
+                daysUntilMonday += 7; // To get the previous week's Monday
+
+            return currentDate.AddDays(-daysUntilMonday);
+        }
+
         /// <summary>
         /// Invoked when the application is launched.
         /// </summary>
@@ -118,10 +128,14 @@ namespace timecatcher
             notificationManager.NotificationInvoked += NotificationManager_NotificationInvoked;
             notificationManager.Register();
             // Create a 30 min timer 
+
+            DateTime currentDate = DateTime.Today;
+            DateTime lastMonday = GetLastMonday(currentDate);
+
             string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string ConfigDir = System.IO.Path.Combine(docPath, "timecatcher");
             string ConfigFile = System.IO.Path.Combine(ConfigDir, "config.json");
-            string TimeEntriesFile = System.IO.Path.Combine(ConfigDir, "timeentries.csv");
+            string TimeEntriesFile = System.IO.Path.Combine(ConfigDir, "timeentries_"+ lastMonday.ToString("yyyy-MM-dd")+".csv");
             string _configJson = "";
 
             if (!Directory.Exists(ConfigDir))
@@ -316,6 +330,8 @@ namespace timecatcher
             });
 
         }
+
+
 
         public struct TimeEntry
         {
