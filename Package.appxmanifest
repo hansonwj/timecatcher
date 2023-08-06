@@ -7,9 +7,11 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
-  IgnorableNamespaces="uap rescap com desktop">
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
 
-  <Identity
+IgnorableNamespaces="uap rescap com desktop">
+
+<Identity
     Name="1c9e200a-b3c8-4cb8-b1ae-94eab7ceadf5"
     Publisher="CN=JakeHanson"
     Version="1.0.1.0" />
@@ -45,6 +47,15 @@
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
       <Extensions>
+
+        <uap3:Extension
+            Category="windows.appExecutionAlias"
+            Executable="timecatcher.exe"
+            EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="timecatcher.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
 
         <!--Specify which CLSID to activate when toast clicked-->
         <desktop:Extension Category="windows.toastNotificationActivation">

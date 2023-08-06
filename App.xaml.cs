@@ -29,6 +29,8 @@ using Windows.Devices.Bluetooth.Advertisement;
 using Microsoft.Win32;
 using Windows.UI.Notifications.Management;
 using System.Timers;
+using Windows.Media.Protection.PlayReady;
+using Windows.System;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -59,6 +61,16 @@ namespace timecatcher
             public uint dwTime;
         }
 
+
+        public struct TimeEntry
+        {
+            public string Client;
+            public string Project;
+            public string Notes;
+            public string Datetime;
+            public string Manual;
+        };
+
         private static bool UserIsInactive()
         {
             // Get the last input information
@@ -73,7 +85,7 @@ namespace timecatcher
 
                 // If the system has been idle for more than the specified time (15 minutes in this case),
                 // it is considered locked
-                return idleTime > 900000; // 15 minutes = 900,000 milliseconds
+                return idleTime > 840000; // 15 minutes = 900,000 milliseconds
             }
 
             return false;
@@ -114,10 +126,11 @@ namespace timecatcher
         public static class Globals
         {
             public static String CurrentClient = ""; // Modifiable
-            
+
         }
 
         public static Timer timer;
+        private Window m_window;
 
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
@@ -135,7 +148,7 @@ namespace timecatcher
             string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             string ConfigDir = System.IO.Path.Combine(docPath, "timecatcher");
             string ConfigFile = System.IO.Path.Combine(ConfigDir, "config.json");
-            string TimeEntriesFile = System.IO.Path.Combine(ConfigDir, "timeentries_"+ lastMonday.ToString("yyyy-MM-dd")+".csv");
+            string TimeEntriesFile = System.IO.Path.Combine(ConfigDir, "timeentries_" + lastMonday.ToString("yyyy-MM-dd") + ".csv");
             string _configJson = "";
 
             if (!Directory.Exists(ConfigDir))
@@ -146,44 +159,39 @@ namespace timecatcher
             if (File.Exists(ConfigFile))
             {
                 _configJson = File.ReadAllText(ConfigFile);
-            } else
+            }
+            else
             {
                 // Create a new Config object with the default values
                 var configObject = new
                 {
-                    Clients = new[]
-                    {
-                        new { name = "Admin" }
-                    },
-                    Schedule = 15,
-                    TimerEnabled = true
+                    CurrentClient = ""
                 };
 
                 // Serialize the Config object to JSON
                 _configJson = JsonConvert.SerializeObject(configObject, Formatting.Indented);
 
-                    // Write the JSON to the config.json file
-                    File.WriteAllText(ConfigFile, _configJson);
+                // Write the JSON to the config.json file
+                File.WriteAllText(ConfigFile, _configJson);
             }
 
             if (!File.Exists(TimeEntriesFile))
             {
-                string Headings = "timestamp,client,project,notes,manual";
-               CreateCsvFile(TimeEntriesFile, Headings);
+                string Headings = "timestamp,client,notes,manual";
+                CreateCsvFile(TimeEntriesFile, Headings);
             }
 
-            
+            Globals.CurrentClient = JsonConvert.DeserializeObject<ConfigData>(_configJson).CurrentClient;
 
-            var _schedule = JsonConvert.DeserializeObject<ConfigData>(_configJson).schedule;
-            var _timerEnabled = JsonConvert.DeserializeObject<ConfigData>(_configJson).timerEnabled;
+            CreateTimeEntryNotification(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
 
-            timer = new System.Timers.Timer(_schedule*1000*60);
+            timer = new System.Timers.Timer(14 * 1000 * 60);
 
             // Hook up the Elapsed event for the timer.
-            timer.Elapsed += (sender, e) => OnTimedEvent(sender, e, notificationManager);
+            timer.Elapsed += (sender, e) => CleanUpNotification(sender, e, notificationManager);
 
-            timer.Enabled = _timerEnabled;
-            
+            timer.Enabled = true;
+
 
             var activatedArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
             var activationKind = activatedArgs.Kind;
@@ -197,9 +205,7 @@ namespace timecatcher
             }
         }
 
-        private Window m_window;
-
-        private async static void OnTimedEvent(object sender, EventArgs e, AppNotificationManager notificationManager)
+        private async static void CleanUpNotification(object sender, EventArgs e, AppNotificationManager notificationManager)
         {
             // Create a time entry for 15 mins ago and clear out existing notifications
             // if they haven't been clicked
@@ -212,7 +218,8 @@ namespace timecatcher
                 {
                     entry.Client = "Inactive";
                 }
-                else {
+                else
+                {
                     entry.Client = Globals.CurrentClient;
                 }
                 entry.Project = "";
@@ -222,70 +229,146 @@ namespace timecatcher
                 ProcessNewTimeEntry(entry);
             }
             await notificationManager.RemoveAllAsync();
-
-            // Create new notification
-            CreateTimeEntryNotification(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+            timer.Enabled = false;
+            Environment.Exit(0);
         }
 
-        private void  NotificationManager_NotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
+        private void NotificationManager_NotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
         {
             HandleNotification(args);
         }
 
         public class ConfigData
         {
-            public List<ClientConfig> clients { get; set; }
-            public float schedule { get; set; }
-            public bool timerEnabled { get; set; }
+            public string CurrentClient { get; set; }
         }
 
-        public class ClientConfig
-        {
-            public string name { get; set; }
-            public List<ClientProject> projects { get; set; }
-        }
-
-        public class ClientProject
-        {
-            public string name { get; set; }
-        }
 
         private static void CreateTimeEntryNotification(string triggeredTime)
         {
             string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            DateTime currentDate = DateTime.Today;
+            DateTime lastMonday = GetLastMonday(currentDate);
+
+            string ConfigDir = System.IO.Path.Combine(docPath, "timecatcher");
+            string ConfigFile = System.IO.Path.Combine(ConfigDir, "config.json");
+            string TimeEntriesFile = System.IO.Path.Combine(ConfigDir, "timeentries_" + lastMonday.ToString("yyyy-MM-dd") + ".csv");
             string _configJson = File.ReadAllText(System.IO.Path.Combine(docPath, "timecatcher", "config.json"));
-            var _config = JsonConvert.DeserializeObject<ConfigData>(_configJson);
+            var _CurrentClient = JsonConvert.DeserializeObject<ConfigData>(_configJson).CurrentClient;
 
             var appNotificationBuilder = new AppNotificationBuilder();
             appNotificationBuilder.MuteAudio();
 
             //.AddArgument("action", "ToastClick") // Disabled action on popup click
             appNotificationBuilder.AddText("What have you been working on?");
-            appNotificationBuilder.AddText("15 mins prior to "+triggeredTime);
-            
-            var clientcombo = new AppNotificationComboBox("Client");
-            // Read in 
-            foreach (ClientConfig client in _config.clients)
-            {
-                clientcombo.AddItem(client.name, client.name);
-            }
-           
-            clientcombo.SelectedItem = Globals.CurrentClient;
-            appNotificationBuilder.AddComboBox(clientcombo);
+            appNotificationBuilder.AddText("15 mins prior to " + triggeredTime);
+
+            appNotificationBuilder.AddTextBox("Client", _CurrentClient, "Client");
 
             appNotificationBuilder.AddTextBox("Notes", "Notes", "");
             appNotificationBuilder.AddButton(new AppNotificationButton("Submit")
                 .AddArgument("action", triggeredTime));
-            appNotificationBuilder.AddButton(new AppNotificationButton("Manager")
-                .AddArgument("action", "manager"));
+            //appNotificationBuilder.AddButton(new AppNotificationButton("Manager")
+            //    .AddArgument("action", "manager"));
             appNotificationBuilder.SetDuration(AppNotificationDuration.Long);
-            
+
 
             var appNotification = appNotificationBuilder.BuildNotification();
 
 
             AppNotificationManager.Default.Show(appNotification);
-                    }
+        }
+
+        private void HandleNotification(AppNotificationActivatedEventArgs args)
+        {
+
+            // Use the dispatcher from the window if present, otherwise the app dispatcher
+            var dispatcherQueue = m_window?.DispatcherQueue ?? Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+
+            var client = args.UserInput["Client"];
+
+            if (client == "")
+            {
+                client = Globals.CurrentClient;
+            }
+
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                if (args.Arguments["action"] != "manager")
+                {
+                    Debug.WriteLine("Handling Time Entry");
+                    var entry = new TimeEntry();
+                    entry.Client = client;
+                    entry.Project = "";
+                    entry.Notes = args.UserInput["Notes"];
+                    entry.Datetime = args.Arguments["action"];
+                    entry.Manual = "True";
+                    ProcessNewTimeEntry(entry);
+                    WriteCurrentClientToJson(client);
+                }
+                else
+                {
+                    Debug.WriteLine("Opening Manager");
+                    LaunchAndBringToForegroundIfNeeded();
+                }
+            });
+
+            var shutdownTimer = new System.Timers.Timer(5 * 1000); // 5 seconds then shutdown
+
+            // Hook up the Elapsed event for the timer.
+            shutdownTimer.Elapsed += (sender, e) => ShutdownApp(sender, e);
+
+            shutdownTimer.Enabled = true;
+
+        }
+
+        private static void ShutdownApp(object sender, EventArgs e)
+        {
+            Environment.Exit(0);
+        }
+
+
+            public static void ProcessNewTimeEntry(TimeEntry timeentry)
+        {
+            // Set a variable to the Documents path.
+            string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            DateTime currentDate = DateTime.Today;
+            DateTime lastMonday = GetLastMonday(currentDate);
+
+            string ConfigDir = System.IO.Path.Combine(docPath, "timecatcher");
+            string TimeEntriesFile = System.IO.Path.Combine(ConfigDir, "timeentries_" + lastMonday.ToString("yyyy-MM-dd") + ".csv");
+
+            // Append text to an existing file named "WriteLines.txt".
+            using (StreamWriter outputFile = new StreamWriter(TimeEntriesFile, true))
+            {
+                outputFile.WriteLine($"{timeentry.Datetime},{timeentry.Client},{timeentry.Notes},{timeentry.Manual}");
+            }
+        }
+
+        public static void WriteCurrentClientToJson(string CurrentClient)
+        {
+            ConfigData data = new ConfigData
+            {
+                CurrentClient = CurrentClient
+            };
+
+            string json = JsonConvert.SerializeObject(data, Formatting.Indented);
+            string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string ConfigDir = System.IO.Path.Combine(docPath, "timecatcher");
+            string ConfigFile = System.IO.Path.Combine(ConfigDir, "config.json");
+
+            try
+            {
+                // Write the JSON data to the file
+                File.WriteAllText(ConfigFile, json);
+
+                Console.WriteLine("Current client data has been written to the JSON file.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing to JSON file: {ex.Message}");
+            }
+        }
 
         private void LaunchAndBringToForegroundIfNeeded()
         {
@@ -301,56 +384,6 @@ namespace timecatcher
             else
             {
                 WindowHelper.ShowWindow(m_window);
-            }
-        }
-
-        private void HandleNotification(AppNotificationActivatedEventArgs args)
-        {
-            
-            // Use the dispatcher from the window if present, otherwise the app dispatcher
-            var dispatcherQueue = m_window?.DispatcherQueue ?? DispatcherQueue.GetForCurrentThread();
-            dispatcherQueue.TryEnqueue(() =>
-            {
-                if (args.Arguments["action"] != "manager") {
-                    Debug.WriteLine("Handling Time Entry");
-                    var entry = new TimeEntry();
-                    entry.Client = args.UserInput["Client"];
-                    entry.Project = "";
-                    entry.Notes = args.UserInput["Notes"];
-                    entry.Datetime = args.Arguments["action"];
-                    entry.Manual = "True";
-                    ProcessNewTimeEntry(entry);
-                    Globals.CurrentClient = args.UserInput["Client"];
-                }
-                else {
-                    Debug.WriteLine("Opening Manager");
-                    LaunchAndBringToForegroundIfNeeded();
-                }
-
-            });
-
-        }
-
-
-
-        public struct TimeEntry
-        {
-            public string Client;
-            public string Project;
-            public string Notes;
-            public string Datetime;
-            public string Manual;
-        };
-
-        public static void ProcessNewTimeEntry(TimeEntry timeentry)
-        {
-            // Set a variable to the Documents path.
-            string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-            // Append text to an existing file named "WriteLines.txt".
-            using (StreamWriter outputFile = new StreamWriter(System.IO.Path.Combine(docPath, "timecatcher", "timeentries.csv"), true))
-            {
-                outputFile.WriteLine($"{timeentry.Datetime},{timeentry.Client},{timeentry.Project},{timeentry.Notes},{timeentry.Manual}");
             }
         }
 
