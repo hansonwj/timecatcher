@@ -13,7 +13,7 @@
     <BaseOutputPath>C:\Users\JakeHanson\source\repos\timecatcher\bin</BaseOutputPath>
     <GenerateAppInstallerFile>True</GenerateAppInstallerFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-    <PackageCertificateThumbprint>EE04E64BC23885F7012EB90056B0D72A298A4080</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>00F1431F40F938B28E7B308BA9483279467F611D</PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>

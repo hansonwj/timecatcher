@@ -95,8 +95,8 @@ namespace timecatcher
         {
             int daysUntilMonday = (int)currentDate.DayOfWeek - (int)DayOfWeek.Monday;
 
-            if (daysUntilMonday <= 0)
-                daysUntilMonday += 7; // To get the previous week's Monday
+            //if (daysUntilMonday <= 0)
+            //    daysUntilMonday += 7; // To get the previous week's Monday
 
             return currentDate.AddDays(-daysUntilMonday);
         }
