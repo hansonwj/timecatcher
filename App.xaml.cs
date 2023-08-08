@@ -85,7 +85,7 @@ namespace timecatcher
 
                 // If the system has been idle for more than the specified time (15 minutes in this case),
                 // it is considered locked
-                return idleTime > 840000; // 15 minutes = 900,000 milliseconds
+                return idleTime > 300000; // 5 minutes = 900,000 milliseconds
             }
 
             return false;
