@@ -183,12 +183,14 @@ namespace timecatcher
 
             Globals.CurrentClient = JsonConvert.DeserializeObject<ConfigData>(_configJson).CurrentClient;
 
-            CreateTimeEntryNotification(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+            var NotificationTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+
+            CreateTimeEntryNotification(NotificationTime);
 
             timer = new System.Timers.Timer(14 * 1000 * 60);
 
             // Hook up the Elapsed event for the timer.
-            timer.Elapsed += (sender, e) => CleanUpNotification(sender, e, notificationManager);
+            timer.Elapsed += (sender, e) => CleanUpNotification(sender, e, notificationManager, NotificationTime);
 
             timer.Enabled = true;
 
@@ -205,7 +207,7 @@ namespace timecatcher
             }
         }
 
-        private async static void CleanUpNotification(object sender, EventArgs e, AppNotificationManager notificationManager)
+        private async static void CleanUpNotification(object sender, EventArgs e, AppNotificationManager notificationManager, String NotificationTime)
         {
             // Create a time entry for 15 mins ago and clear out existing notifications
             // if they haven't been clicked
@@ -224,7 +226,7 @@ namespace timecatcher
                 }
                 entry.Project = "";
                 entry.Notes = "";
-                entry.Datetime = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                entry.Datetime = NotificationTime;
                 entry.Manual = "False";
                 ProcessNewTimeEntry(entry);
             }
