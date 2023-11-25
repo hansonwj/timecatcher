@@ -31,6 +31,8 @@ using Windows.UI.Notifications.Management;
 using System.Timers;
 using Windows.Media.Protection.PlayReady;
 using Windows.System;
+using Windows.UI.Notifications;
+using System.Numerics;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -93,12 +95,18 @@ namespace timecatcher
 
         static DateTime GetLastMonday(DateTime currentDate)
         {
-            int daysUntilMonday = (int)currentDate.DayOfWeek - (int)DayOfWeek.Monday;
+            int daysUntilMonday = ((int)currentDate.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
 
-            //if (daysUntilMonday <= 0)
-            //    daysUntilMonday += 7; // To get the previous week's Monday
-
-            return currentDate.AddDays(-daysUntilMonday);
+            if (daysUntilMonday == 0)
+            {
+                // If it's Monday, return the current date
+                return currentDate;
+            }
+            else
+            {
+                // Calculate and return the previous Monday
+                return currentDate.AddDays(-daysUntilMonday);
+            }
         }
 
         /// <summary>
@@ -126,6 +134,7 @@ namespace timecatcher
         public static class Globals
         {
             public static String CurrentClient = ""; // Modifiable
+            public static int Interval = 15;
 
         }
 
@@ -165,7 +174,8 @@ namespace timecatcher
                 // Create a new Config object with the default values
                 var configObject = new
                 {
-                    CurrentClient = ""
+                    CurrentClient = "",
+                    Interval = 15
                 };
 
                 // Serialize the Config object to JSON
@@ -182,29 +192,45 @@ namespace timecatcher
             }
 
             Globals.CurrentClient = JsonConvert.DeserializeObject<ConfigData>(_configJson).CurrentClient;
-
-            var NotificationTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
-
-            CreateTimeEntryNotification(NotificationTime);
-
-            timer = new System.Timers.Timer(14 * 1000 * 60);
-
-            // Hook up the Elapsed event for the timer.
-            timer.Elapsed += (sender, e) => CleanUpNotification(sender, e, notificationManager, NotificationTime);
-
-            timer.Enabled = true;
+            Globals.Interval = JsonConvert.DeserializeObject<ConfigData>(_configJson).Interval;
 
 
-            var activatedArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
-            var activationKind = activatedArgs.Kind;
-            if (activationKind != ExtendedActivationKind.AppNotification)
+            // Get the current time
+            DateTime currentTime = DateTime.Now;
+
+            // Check if the current minute matches one of the specified intervals (00, 15, 30, 45)
+            if (currentTime.Minute % Globals.Interval == 0)
             {
-                ; // LaunchAndBringToForegroundIfNeeded();
+                // Create the notification time using the current hour and the matched minute
+                string notificationTime = currentTime.ToString("dd/MM/yyyy HH:mm");
+
+
+                CreateTimeEntryNotification(notificationTime);
+
+                timer = new System.Timers.Timer(14 * 1000 * 60);
+
+                // Hook up the Elapsed event for the timer.
+                timer.Elapsed += (sender, e) => CleanUpNotification(sender, e, notificationManager, notificationTime);
+
+                timer.Enabled = true;
+
+
+                var activatedArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
+                var activationKind = activatedArgs.Kind;
+                if (activationKind != ExtendedActivationKind.AppNotification)
+                {
+                    ; // LaunchAndBringToForegroundIfNeeded();
+                }
+                else
+                {
+                    HandleNotification((AppNotificationActivatedEventArgs)activatedArgs.Data);
+                }
+
             }
-            else
-            {
-                HandleNotification((AppNotificationActivatedEventArgs)activatedArgs.Data);
-            }
+
+
+
+
         }
 
         private async static void CleanUpNotification(object sender, EventArgs e, AppNotificationManager notificationManager, String NotificationTime)
@@ -243,6 +269,7 @@ namespace timecatcher
         public class ConfigData
         {
             public string CurrentClient { get; set; }
+            public int Interval { get; set; }
         }
 
 
@@ -256,12 +283,21 @@ namespace timecatcher
             string ConfigFile = System.IO.Path.Combine(ConfigDir, "config.json");
             string TimeEntriesFile = System.IO.Path.Combine(ConfigDir, "timeentries_" + lastMonday.ToString("yyyy-MM-dd") + ".csv");
             string _configJson = File.ReadAllText(System.IO.Path.Combine(docPath, "timecatcher", "config.json"));
-            var _CurrentClient = JsonConvert.DeserializeObject<ConfigData>(_configJson).CurrentClient;
+            var _CurrentClient = "";
+            if (UserIsInactive())
+            {
+                _CurrentClient = "Inactive";
+                Globals.CurrentClient = "Inactive";
+            }
+            else
+            {
+                _CurrentClient = JsonConvert.DeserializeObject<ConfigData>(_configJson).CurrentClient;
+            }
 
             var appNotificationBuilder = new AppNotificationBuilder();
             appNotificationBuilder.MuteAudio();
 
-            //.AddArgument("action", "ToastClick") // Disabled action on popup click
+            appNotificationBuilder.AddArgument("action", triggeredTime);
             appNotificationBuilder.AddText("What have you been working on?");
             appNotificationBuilder.AddText("15 mins prior to " + triggeredTime);
 
@@ -276,9 +312,10 @@ namespace timecatcher
 
 
             var appNotification = appNotificationBuilder.BuildNotification();
-
+            
 
             AppNotificationManager.Default.Show(appNotification);
+
         }
 
         private void HandleNotification(AppNotificationActivatedEventArgs args)
@@ -351,7 +388,8 @@ namespace timecatcher
         {
             ConfigData data = new ConfigData
             {
-                CurrentClient = CurrentClient
+                CurrentClient = CurrentClient,
+                Interval = Globals.Interval
             };
 
             string json = JsonConvert.SerializeObject(data, Formatting.Indented);
