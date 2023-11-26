@@ -1,3 +1,7 @@
-Set WshShell = CreateObject("WScript.Shell") 
-WshShell.Run chr(34) & "C:\Users\JakeHanson\source\repos\timecatcher\timecatcher.bat" & Chr(34), 0
-Set WshShell = Nothing
+Set objShell = CreateObject("WScript.Shell")
+
+' Replace "path_to_your_exe" with the actual path to your executable
+exePath = "timecatcher.exe"
+
+' Run the executable
+objShell.Run """" & exePath & """", 1, True

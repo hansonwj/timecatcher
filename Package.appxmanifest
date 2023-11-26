@@ -14,7 +14,7 @@ IgnorableNamespaces="uap rescap com desktop">
 <Identity
     Name="1c9e200a-b3c8-4cb8-b1ae-94eab7ceadf5"
     Publisher="CN=JakeHanson"
-    Version="1.0.10.0" />
+    Version="1.0.14.0" />
 
   <mp:PhoneIdentity PhoneProductId="1c9e200a-b3c8-4cb8-b1ae-94eab7ceadf5" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

@@ -71,6 +71,7 @@ namespace timecatcher
             public string Notes;
             public string Datetime;
             public string Manual;
+            public int Interval;
         };
 
         private static bool UserIsInactive()
@@ -187,7 +188,7 @@ namespace timecatcher
 
             if (!File.Exists(TimeEntriesFile))
             {
-                string Headings = "timestamp,client,notes,manual";
+                string Headings = "timestamp,client,notes,manual,interval";
                 CreateCsvFile(TimeEntriesFile, Headings);
             }
 
@@ -254,6 +255,7 @@ namespace timecatcher
                 entry.Notes = "";
                 entry.Datetime = NotificationTime;
                 entry.Manual = "False";
+                entry.Interval = Globals.Interval / 60;
                 ProcessNewTimeEntry(entry);
             }
             await notificationManager.RemoveAllAsync();
@@ -342,6 +344,7 @@ namespace timecatcher
                     entry.Notes = args.UserInput["Notes"];
                     entry.Datetime = args.Arguments["action"];
                     entry.Manual = "True";
+                    entry.Interval = Globals.Interval / 60;
                     ProcessNewTimeEntry(entry);
                     WriteCurrentClientToJson(client);
                 }
