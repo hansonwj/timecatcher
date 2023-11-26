@@ -18,22 +18,22 @@ install your own certificate.
 - Open the csproj file in the repo
 - In the solution explorer, right click on Timecatcher, and go to Package and Publish > Create App Package
 
-![Packaging](package.png)
+![Packaging](./Docs/Package.png)
 
 - Choose Sideloading on the next page
 - On the next page, create a new certificate if one is not already created
 
-![Cert](CreateCert.png)
+![Cert](./Docs/CreateCert.png)
 
 - Next, choose your builds. You only need x64: Release
 
-![Builds](Builds.png)
+![Builds](./Docs/Builds.png)
 
 - Finally, hit Create.
 
 - On the results page, copy the Output location, and navigate to it for the next step: installation
 
-![Package location](PackageLocation.png)
+![Package location](./Docs/PackageLocation.png)
 
 ### Installing
 
