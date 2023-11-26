@@ -71,7 +71,7 @@ namespace timecatcher
             public string Notes;
             public string Datetime;
             public string Manual;
-            public int Interval;
+            public float Interval;
         };
 
         private static bool UserIsInactive()
@@ -255,7 +255,7 @@ namespace timecatcher
                 entry.Notes = "";
                 entry.Datetime = NotificationTime;
                 entry.Manual = "False";
-                entry.Interval = Globals.Interval / 60;
+                entry.Interval = (float)Globals.Interval / 60;
                 ProcessNewTimeEntry(entry);
             }
             await notificationManager.RemoveAllAsync();
@@ -344,7 +344,7 @@ namespace timecatcher
                     entry.Notes = args.UserInput["Notes"].Replace("\r", "").Replace("\n", ""); ;
                     entry.Datetime = args.Arguments["action"];
                     entry.Manual = "True";
-                    entry.Interval = Globals.Interval / 60;
+                    entry.Interval = (float)Globals.Interval / 60;
                     ProcessNewTimeEntry(entry);
                     WriteCurrentClientToJson(client);
                 }
@@ -383,7 +383,7 @@ namespace timecatcher
             // Append text to an existing file named "WriteLines.txt".
             using (StreamWriter outputFile = new StreamWriter(TimeEntriesFile, true))
             {
-                outputFile.WriteLine($"{timeentry.Datetime},{timeentry.Client},{timeentry.Notes},{timeentry.Manual}");
+                outputFile.WriteLine($"{timeentry.Datetime},{timeentry.Client},{timeentry.Notes},{timeentry.Manual},{timeentry.Interval}");
             }
         }
 
