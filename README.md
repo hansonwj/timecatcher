@@ -56,7 +56,7 @@ However, by default, the app will suppress any task inititions that aren't a mul
 you must also modify the Interval value in "My Documents/timecatcher/config.json". Changing it to a value of **1** will allow 
 the app to be run every minute, if you wanted it to be...
 
-![Config](./Docs/config.png)
+![Config](./Docs/Config.png)
 
 
 ## Usage
@@ -97,4 +97,4 @@ In Excel (or your preferred spreadsheet), create a Pivot Table (Same Window is b
 
 You will see a nice summarised timesheet next to all your timecatches which you can then load into your timesheeting system.
 
-![Pivot](./Docs/pivot.png)
+![Pivot](./Docs/Pivot.png)
