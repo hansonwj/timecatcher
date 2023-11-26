@@ -339,9 +339,9 @@ namespace timecatcher
                 {
                     Debug.WriteLine("Handling Time Entry");
                     var entry = new TimeEntry();
-                    entry.Client = client;
+                    entry.Client = client.Replace("\r", "").Replace("\n", ""); ;
                     entry.Project = "";
-                    entry.Notes = args.UserInput["Notes"];
+                    entry.Notes = args.UserInput["Notes"].Replace("\r", "").Replace("\n", ""); ;
                     entry.Datetime = args.Arguments["action"];
                     entry.Manual = "True";
                     entry.Interval = Globals.Interval / 60;
